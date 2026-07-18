@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: reflex
+      POSTGRES_PASSWORD: reflex
+      POSTGRES_DB: reflex
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-readonly-role.sql:/docker-entrypoint-initdb.d/init-readonly-role.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reflex -d reflex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      MODEL_NAME: ${MODEL_NAME:-gemini-flash-latest}
+      DATABASE_URL: postgresql+psycopg://reflex:reflex@db:5432/reflex
+      READONLY_DATABASE_URL: postgresql+psycopg://reflex_reader:reflex_reader@db:5432/reflex
+      MAX_ATTEMPTS: ${MAX_ATTEMPTS:-4}
+      ROW_LIMIT: ${ROW_LIMIT:-200}
+      STATEMENT_TIMEOUT_MS: ${STATEMENT_TIMEOUT_MS:-5000}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8010:8000"
+
+volumes:
+  pgdata:
