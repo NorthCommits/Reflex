@@ -1,6 +1,17 @@
 ---
 name: aggregation
 description: When the question asks for counts, sums, averages, or a top-N ranking.
+triggers:
+  - count
+  - how many
+  - total
+  - sum
+  - average
+  - top
+  - most
+  - least
+  - highest
+  - lowest
 ---
 
 Use `GROUP BY` with aggregate functions (`COUNT`, `SUM`, `AVG`, `MAX`, `MIN`). For a

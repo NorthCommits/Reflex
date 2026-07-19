@@ -7,13 +7,14 @@ import yaml
 logger = logging.getLogger("reflex.skills")
 
 LIBRARY_DIR = Path(__file__).parent / "library"
-_REQUIRED_FRONTMATTER_FIELDS = ("name", "description")
+_REQUIRED_FRONTMATTER_FIELDS = ("name", "description", "triggers")
 
 
 @dataclass
 class Skill:
     name: str
     description: str
+    triggers: list[str]
     body: str
 
 
@@ -37,6 +38,7 @@ def _parse_skill_file(path: Path) -> Skill:
     return Skill(
         name=frontmatter["name"],
         description=frontmatter["description"],
+        triggers=[str(t).lower() for t in frontmatter["triggers"]],
         body=body.strip(),
     )
 
@@ -56,10 +58,7 @@ def _load_skills() -> list[Skill]:
     return skills
 
 
-# Skills are loaded once at import time. The set is small enough that
-# selection is not worth building yet: every skill is injected into every
-# prompt (see format_skills_for_prompt). A selection step could be dropped
-# in later without reshaping this module.
+# Skills are loaded once at import time.
 SKILLS: list[Skill] = _load_skills()
 
 
@@ -67,6 +66,23 @@ def get_skills() -> list[Skill]:
     return SKILLS
 
 
-def format_skills_for_prompt() -> str:
-    blocks = [f"## Skill: {s.name}\n{s.description}\n\n{s.body}" for s in SKILLS]
+def select_skills(question: str) -> list[Skill]:
+    """Pick the skills whose triggers appear in the question.
+
+    Falls back to every skill if nothing matches, since an unrecognised
+    question is exactly the case where the model needs the most guidance,
+    not the least.
+    """
+    lowered = question.lower()
+    selected = [s for s in SKILLS if any(trigger in lowered for trigger in s.triggers)]
+
+    if not selected:
+        logger.info("no skill triggers matched, falling back to all skills")
+        return SKILLS
+
+    return selected
+
+
+def format_skills_for_prompt(skills: list[Skill]) -> str:
+    blocks = [f"## Skill: {s.name}\n{s.description}\n\n{s.body}" for s in skills]
     return "\n\n".join(blocks)

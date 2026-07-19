@@ -6,7 +6,7 @@ from reflex.executor import execute_sql, validate_sql
 from reflex.llm import propose
 from reflex.logging_config import correlation_id_var
 from reflex.schema import format_schema_for_prompt, introspect_schema
-from reflex.skills.registry import format_skills_for_prompt
+from reflex.skills.registry import format_skills_for_prompt, select_skills
 from reflex.trace import Attempt, LoopResult
 
 logger = logging.getLogger("reflex.harness")
@@ -34,9 +34,14 @@ def _build_prompt(schema_text: str, skills_text: str, question: str, attempts: l
     return "\n\n".join(parts)
 
 
+_NO_DATA_MESSAGE = "The query ran successfully but found no matching data for that question."
+
+
 def _format_answer(rows: list[dict]) -> str:
-    if not rows:
-        return "The query ran successfully and returned no rows."
+    no_rows = not rows
+    all_null_row = len(rows) == 1 and all(v is None for v in rows[0].values())
+    if no_rows or all_null_row:
+        return _NO_DATA_MESSAGE
 
     if len(rows) == 1 and len(rows[0]) == 1:
         (value,) = rows[0].values()
@@ -59,7 +64,9 @@ def ask(question: str) -> LoopResult:
         logger.info("question received: %r", question)
 
         schema_text = format_schema_for_prompt()
-        skills_text = format_skills_for_prompt()
+        selected_skills = select_skills(question)
+        logger.info("selected skills: %s", [s.name for s in selected_skills])
+        skills_text = format_skills_for_prompt(selected_skills)
         table_names = [t.name for t in introspect_schema()]
 
         attempts: list[Attempt] = []

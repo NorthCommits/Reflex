@@ -1,6 +1,17 @@
 ---
 name: date_filtering
 description: When the question involves time ranges, relative dates, or grouping by day, week, month, or year.
+triggers:
+  - date
+  - day
+  - week
+  - month
+  - quarter
+  - year
+  - recent
+  - since
+  - between
+  - time
 ---
 
 The date columns are `customers.signup_date`, `orders.order_date`, and `payments.paid_date`,
