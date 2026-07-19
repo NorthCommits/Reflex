@@ -48,7 +48,10 @@ def get_schema():
 
 @app.get("/skills")
 def get_skills_endpoint():
-    return [{"name": s.name, "description": s.description} for s in get_skills()]
+    return [
+        {"name": s.name, "description": s.description, "triggers": s.triggers}
+        for s in get_skills()
+    ]
 
 
 @app.get("/health")

@@ -1,6 +1,14 @@
 ---
 name: joins
 description: When the question spans more than one table, for example anything that relates customers to their orders, orders to their line items or payments, or products to what was sold.
+triggers:
+  - customer
+  - order
+  - product
+  - payment
+  - revenue
+  - country
+  - category
 ---
 
 The schema's foreign keys are:
